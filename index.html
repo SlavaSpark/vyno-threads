@@ -46,11 +46,12 @@ h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;margin:18px
 .author{font-weight:600;color:var(--fg);text-decoration:none;word-break:break-all}
 .age{color:var(--muted);font-size:13px;white-space:nowrap}
 .text{margin:0;font-size:16px;white-space:pre-line;overflow-wrap:anywhere}
-.note{margin:0;font-size:13px;color:var(--muted)}
+.note{margin:0;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
 .note b{font-weight:600;color:var(--fg)}
 .ctx{display:block;border-left:3px solid var(--wine);background:var(--wine-soft);border-radius:0 10px 10px 0;padding:8px 10px;text-decoration:none;color:var(--fg)}
 .ctx small{display:block;color:var(--muted);font-size:12px;margin-bottom:2px}
 .ctx span{font-size:15px;white-space:pre-line}
+.tags:empty{display:none}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tag{background:var(--chip);color:var(--muted);border-radius:999px;padding:3px 9px;font-size:12px}
 .tag.ans{background:var(--ok-soft);color:var(--ok);font-weight:600}
@@ -103,7 +104,6 @@ function card(t){
   const tags=el('div','tags');
   if(t.answer)tags.append(el('span','tag ans','✓ '+t.answer));
   if(t.type==='Контент-ідея')tags.append(el('span','tag idea','ідея'));
-  if(t.tag)tags.append(el('span','tag','#'+t.tag));
   const b=el('div','bottom');const m=el('div','metrics');
   const r=el('span',t.replies>=20?'hot':'', '💬 '+fmt.format(t.replies));
   m.append(r,el('span','', '♥ '+fmt.format(t.likes)));
@@ -111,8 +111,8 @@ function card(t){
   b.append(m,o);
   const parts=[top,el('p','text',t.text||t.topic)];
   if(t.context){const x=el('a','ctx');x.href=t.context.url;x.target='_blank';x.rel='noopener';x.append(el('small','',t.context.label+' ↗'),el('span','','«'+t.context.text+'»'));parts.push(x);}
-  if(t.text&&t.topic){const n=el('p','note');n.append(el('b','','Чому тут: '),document.createTextNode(t.topic));parts.push(n);}
   c.append(...parts,tags,b);
+  if(t.topic){c.append(el('p','note','Відібрано: пошук «'+(t.tag||'')+'» + '+t.topic));}
   return c;
 }
 function render(){
