@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Вино в Threads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f1ea; --panel:#fffdf9; --fg:#2a1f1d; --muted:#7a6a63; --line:#e6dcd2;
+  --wine:#7b1e3a; --wine-soft:#f3e3e8; --ok:#2f6b3f; --ok-soft:#e3f0e6; --hot:#b4471d;
+  --chip:#efe6dc;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171213; --panel:#211a1b; --fg:#f2e9e4; --muted:#a7968f; --line:#352a2b;
+    --wine:#e07a96; --wine-soft:#3a2129; --ok:#8fcf9f; --ok-soft:#1f3326; --hot:#f0956b; --chip:#2c2324;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171213; --panel:#211a1b; --fg:#f2e9e4; --muted:#a7968f; --line:#352a2b;
+  --wine:#e07a96; --wine-soft:#3a2129; --ok:#8fcf9f; --ok-soft:#1f3326; --hot:#f0956b; --chip:#2c2324;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:20px 16px calc(32px + env(safe-area-inset-bottom))}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(28px,7vw,40px);margin:4px 0 6px;letter-spacing:-.01em}
+header h1 span{color:var(--wine)}
+.sub{color:var(--muted);margin:0;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-size:12px}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:2}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:9px 14px;font:500 14px Inter,sans-serif;cursor:pointer;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--wine);border-color:var(--wine);color:#fff}
+.chip .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;margin:18px 0 10px}
+.list{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.author{font-weight:600;color:var(--fg);text-decoration:none;word-break:break-all}
+.age{color:var(--muted);font-size:13px;white-space:nowrap}
+.topic{margin:0;font-size:16px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{background:var(--chip);color:var(--muted);border-radius:999px;padding:3px 9px;font-size:12px}
+.tag.ans{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.tag.idea{background:var(--wine-soft);color:var(--wine)}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+.metrics{display:flex;gap:14px;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.metrics .hot{color:var(--hot);font-weight:600}
+.open{background:var(--wine);color:#fff;text-decoration:none;border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;min-height:40px;display:inline-flex;align-items:center}
+.empty{color:var(--muted);padding:24px 0;text-align:center}
+footer{color:var(--muted);font-size:12px;margin-top:24px}
+@media (max-width:420px){.stat b{font-size:24px}.stat{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sub" id="updated">Оновлюємо…</p>
+    <h1>Вино <span>в Threads</span></h1>
+    <p class="sub">Українськомовні треди, де бренду варто зайти з відповіддю. Тиць «Відкрити» — і пишемо.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="s-reply">—</b><small>відповісти</small></div>
+    <div class="stat"><b id="s-ans">—</b><small>з готовою відповіддю</small></div>
+    <div class="stat"><b id="s-ideas">—</b><small>ідеї для контенту</small></div>
+  </div>
+
+  <nav class="filters" id="filters" aria-label="Фільтр"></nav>
+  <div id="sections"></div>
+
+  <footer>Без тредів про вагітність і залежність. Російськомовні топікстартери відсіяні. Цифри — на момент збору.</footer>
+</div>
+<script>
+const FILTERS=[
+  {id:'all',label:'Усі',test:()=>true},
+  {id:'reply',label:'Відповісти',test:t=>t.type==='Відповісти'},
+  {id:'ans',label:'Є готова відповідь',test:t=>!!t.answer},
+  {id:'fresh',label:'Свіже, до 12 год',test:t=>t.hours_ago<=12},
+  {id:'idea',label:'Ідеї',test:t=>t.type==='Контент-ідея'}
+];
+let state='all', DATA=null;
+const fmt=new Intl.NumberFormat('uk-UA');
+const age=h=>h<1?'щойно':h<24?`${h} год тому`:`${Math.round(h/24)} дн тому`;
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+function card(t){
+  const c=el('article','card');
+  const top=el('div','top');
+  const a=el('a','author',t.author);a.href=t.url;a.target='_blank';a.rel='noopener';
+  top.append(a,el('span','age',age(t.hours_ago)));
+  const tags=el('div','tags');
+  if(t.answer)tags.append(el('span','tag ans','✓ '+t.answer));
+  if(t.type==='Контент-ідея')tags.append(el('span','tag idea','ідея'));
+  if(t.tag)tags.append(el('span','tag','#'+t.tag));
+  const b=el('div','bottom');const m=el('div','metrics');
+  const r=el('span',t.replies>=20?'hot':'', '💬 '+fmt.format(t.replies));
+  m.append(r,el('span','', '♥ '+fmt.format(t.likes)));
+  const o=el('a','open','Відкрити');o.href=t.url;o.target='_blank';o.rel='noopener';
+  b.append(m,o);
+  c.append(top,el('p','topic',t.topic),tags,b);
+  return c;
+}
+function render(){
+  const all=DATA.threads.slice().sort((a,b)=>b.replies-a.replies);
+  const f=FILTERS.find(x=>x.id===state);
+  const nav=document.getElementById('filters');nav.replaceChildren();
+  FILTERS.forEach(x=>{const btn=el('button','chip',x.label);const n=el('span','n',String(all.filter(x.test).length));btn.append(n);btn.setAttribute('aria-pressed',x.id===state);btn.onclick=()=>{state=x.id;render();};nav.append(btn);});
+  const shown=all.filter(f.test);
+  const sec=document.getElementById('sections');sec.replaceChildren();
+  const groups=[['Куди зайти з відповіддю',shown.filter(t=>t.type==='Відповісти')],['Ідеї для контенту',shown.filter(t=>t.type!=='Відповісти')]];
+  groups.forEach(([title,list])=>{if(!list.length)return;sec.append(el('h2','',title));const l=el('div','list');list.forEach(t=>l.append(card(t)));sec.append(l);});
+  if(!shown.length)sec.append(el('p','empty','Тут поки порожньо.'));
+}
+fetch('data.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  DATA=d;
+  const u=new Date(d.updated);
+  document.getElementById('updated').textContent='Оновлено '+u.toLocaleString('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' · треди '+d.window;
+  const T=d.threads;
+  document.getElementById('s-reply').textContent=T.filter(t=>t.type==='Відповісти').length;
+  document.getElementById('s-ans').textContent=T.filter(t=>t.answer).length;
+  document.getElementById('s-ideas').textContent=T.filter(t=>t.type==='Контент-ідея').length;
+  render();
+}).catch(()=>{document.getElementById('updated').textContent='Не вдалося завантажити дані';});
+</script>
+</body>
+</html>
