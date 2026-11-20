@@ -163,7 +163,7 @@ function render(){
   if(!shown.length)sec.append(el('p','empty','Тут поки порожньо.'));
 }
 Promise.all([fetch('data.json',{cache:'no-store'}).then(r=>r.json()),fetch('answers.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,a])=>{
-  ANS=a||{};
+  ANS=(d.answers&&Object.keys(d.answers).length)?d.answers:(a||{});
   DATA=d;
   const u=new Date(d.updated);
   document.getElementById('updated').textContent='Оновлено '+u.toLocaleString('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' · треди '+d.window;
