@@ -66,6 +66,15 @@ h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;margin:18px
 .open{background:var(--wine);color:#fff;text-decoration:none;border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;min-height:40px;display:inline-flex;align-items:center}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 footer{color:var(--muted);font-size:12px;margin-top:24px}
+.reply{border:1px solid var(--ok);background:var(--ok-soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.reply-h{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ok);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.reply-wine{font-size:13px;color:var(--muted)}
+.reply-wine a{color:var(--wine);overflow-wrap:anywhere}
+.reply-text{margin:0;font-size:15px;white-space:pre-line;overflow-wrap:anywhere;color:var(--fg)}
+.reply-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.vtab{border:1px solid var(--ok);background:transparent;color:var(--ok);border-radius:999px;padding:4px 10px;font:600 12px Inter,sans-serif;cursor:pointer;min-height:30px}
+.vtab[aria-pressed="true"]{background:var(--ok);color:var(--panel)}
+.copy{align-self:flex-start;border:0;background:var(--ok);color:var(--panel);border-radius:10px;padding:8px 12px;font:600 13px Inter,sans-serif;cursor:pointer;min-height:36px}
 @media (max-width:420px){.stat b{font-size:24px}.stat{padding:10px}}
 </style>
 </head>
@@ -115,9 +124,32 @@ function card(t){
   b.append(m,o);
   const parts=[top,el('p','text',t.text||t.topic)];
   if(t.context){const x=el('a','ctx');x.href=t.context.url;x.target='_blank';x.rel='noopener';x.append(el('small','',t.context.label+' ↗'),el('span','','«'+t.context.text+'»'));parts.push(x);}
+  const rp=replyBlock(t);if(rp)parts.push(rp);
   c.append(...parts,tags,b);
   if(t.topic){c.append(el('p','note','Відібрано: пошук «'+(t.tag||'')+'» + '+t.topic));}
   return c;
+}
+let ANS={};
+function copyText(txt,btn){const done=()=>{const o=btn.textContent;btn.textContent='Скопійовано ✓';setTimeout(()=>btn.textContent=o,1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,()=>fallback());}else fallback();
+  function fallback(){const ta=document.createElement('textarea');ta.value=txt;document.body.append(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}ta.remove();}}
+function replyBlock(t){
+  const base=(t.answer&&ANS[t.answer])||[];
+  if(!t.answer_copy&&!base.length)return null;
+  let pick=Math.min(t.answer_pick||0,Math.max(base.length-1,0));
+  const box=el('div','reply');
+  const draw=()=>{
+    box.replaceChildren();
+    const v=base[pick]||{wine:'',link:'',copy:''};
+    const own=t.answer_copy&&pick===(t.answer_pick||0);
+    const copy=own?t.answer_copy:v.copy;
+    const h=el('div','reply-h');h.append(el('span','','Пропонована відповідь'),el('span','',t.answer||''));box.append(h);
+    if(base.length>1){const tabs=el('div','reply-tabs');base.forEach((x,i)=>{const b=el('button','vtab',String(i+1));b.title=x.wine;b.setAttribute('aria-pressed',i===pick);b.onclick=()=>{pick=i;draw();};tabs.append(b);});box.append(tabs);}
+    if(v.wine){const w=el('div','reply-wine','🍷 '+v.wine+(v.link?' · ':''));if(v.link){const a=el('a','',v.link);a.href=v.link;a.target='_blank';a.rel='noopener';w.append(a);}box.append(w);}
+    box.append(el('p','reply-text',copy));
+    const btn=el('button','copy','Скопіювати');btn.onclick=()=>copyText(copy+(v.link?' '+v.link:''),btn);box.append(btn);
+  };
+  draw();return box;
 }
 function render(){
   const all=DATA.threads.slice().sort((a,b)=>b.replies-a.replies);
@@ -130,7 +162,8 @@ function render(){
   groups.forEach(([title,list])=>{if(!list.length)return;sec.append(el('h2','',title));const l=el('div','list');list.forEach(t=>l.append(card(t)));sec.append(l);});
   if(!shown.length)sec.append(el('p','empty','Тут поки порожньо.'));
 }
-fetch('data.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+Promise.all([fetch('data.json',{cache:'no-store'}).then(r=>r.json()),fetch('answers.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,a])=>{
+  ANS=a||{};
   DATA=d;
   const u=new Date(d.updated);
   document.getElementById('updated').textContent='Оновлено '+u.toLocaleString('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' · треди '+d.window;
