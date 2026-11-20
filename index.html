@@ -145,7 +145,8 @@ function replyBlock(t){
     const copy=own?t.answer_copy:v.copy;
     const h=el('div','reply-h');h.append(el('span','','Пропонована відповідь'),el('span','',t.answer||''));box.append(h);
     if(base.length>1){const tabs=el('div','reply-tabs');base.forEach((x,i)=>{const b=el('button','vtab',String(i+1));b.title=x.wine;b.setAttribute('aria-pressed',i===pick);b.onclick=()=>{pick=i;draw();};tabs.append(b);});box.append(tabs);}
-    if(v.wine){const w=el('div','reply-wine','🍷 '+v.wine+(v.link?' · ':''));if(v.link){const a=el('a','',v.link);a.href=v.link;a.target='_blank';a.rel='noopener';w.append(a);}box.append(w);}
+    const showLink=v.link&&!copy.includes(v.link);
+    if(v.wine){const w=el('div','reply-wine','🍷 '+v.wine+(showLink?' · ':''));if(showLink){const a=el('a','',v.link);a.href=v.link;a.target='_blank';a.rel='noopener';w.append(a);}box.append(w);}
     box.append(el('p','reply-text',copy));
     const btn=el('button','copy','Скопіювати');btn.onclick=()=>copyText(copy+(v.link&&!copy.includes(v.link)?'\n\n'+v.link:''),btn);box.append(btn);
   };
